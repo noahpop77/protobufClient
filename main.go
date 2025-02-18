@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 
 	// Import the generated Protobuf Go file
-	"testClient/matchmaking/party" // Adjust the path to your generated pb.go file
+	"testClient/matchmaking/party"
 )
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 					RiotName:    "Spica",
 					RiotTagLine: "NA1",
 					Rank:        "18",
+					Role:        "Bottom",
 					Puuid:       "Xo7QpJdK-2YgVzLtRAEm6c0f5_WxA8PqBN3yL9vMGbJhFzsTUKCdN4QoS1pZGXWA",
 				},
 			},
@@ -37,6 +39,7 @@ func main() {
 					RiotName:    "BobbyB",
 					RiotTagLine: "NA1",
 					Rank:        "19",
+					Role:        "Top",
 					Puuid:       "JvU9pQmG-0YxBTfNhLKCA3Ro2WzXlJqM7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdT3",
 				},
 			},
@@ -50,6 +53,7 @@ func main() {
 					RiotName:    "Haidder",
 					RiotTagLine: "NA1",
 					Rank:        "20",
+					Role:        "Top",
 					Puuid:       "KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9B",
 				},
 			},
@@ -63,6 +67,7 @@ func main() {
 					RiotName:    "Mingle",
 					RiotTagLine: "NA1",
 					Rank:        "21",
+					Role:        "Middle",
 					Puuid:       "P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YB",
 				},
 			},
@@ -76,6 +81,7 @@ func main() {
 					RiotName:    "Dingle",
 					RiotTagLine: "NA1",
 					Rank:        "21",
+					Role:        "Jungle",
 					Puuid:       "L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybNX",
 				},
 			},
@@ -89,6 +95,7 @@ func main() {
 					RiotName:    "Karar",
 					RiotTagLine: "NA1",
 					Rank:        "22",
+					Role:        "Support",
 					Puuid:       "2YgVzLtRAEm6c0f5_WxA8PqBN3l9vMGbJhFzsTUKCdN4QoS1pZGXWJvU9pQmG0x",
 				},
 			},
@@ -102,6 +109,7 @@ func main() {
 					RiotName:    "Anghel",
 					RiotTagLine: "NA1",
 					Rank:        "22",
+					Role:        "Jungle",
 					Puuid:       "QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3o",
 				},
 			},
@@ -115,6 +123,7 @@ func main() {
 					RiotName:    "Zizzy",
 					RiotTagLine: "NA1",
 					Rank:        "18",
+					Role:        "Middle",
 					Puuid:       "RAEm6c0f5_WxA8PqBN3yL9vMGbJhFzsTUKCdN4QoS1pZGXWJvU9pQmG0YxBTfNh7",
 				},
 			},
@@ -128,6 +137,7 @@ func main() {
 					RiotName:    "Fruity",
 					RiotTagLine: "NA1",
 					Rank:        "20",
+					Role:        "Top",
 					Puuid:       "WJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4o",
 				},
 			},
@@ -141,6 +151,7 @@ func main() {
 					RiotName:    "Mathmood",
 					RiotTagLine: "NA1",
 					Rank:        "19",
+					Role:        "Support",
 					Puuid:       "F6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhLP",
 				},
 			},
@@ -154,6 +165,7 @@ func main() {
 					RiotName:    "Zeus",
 					RiotTagLine: "NA1",
 					Rank:        "23",
+					Role:        "Bottom",
 					Puuid:       "M7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0",
 				},
 			},
@@ -167,6 +179,7 @@ func main() {
 					RiotName:    "Apollo",
 					RiotTagLine: "NA1",
 					Rank:        "22",
+					Role:        "Support",
 					Puuid:       "N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybXoEWsK1L9RBpCdTJ3KCA3W",
 				},
 			},
@@ -180,6 +193,7 @@ func main() {
 					RiotName:    "Ares",
 					RiotTagLine: "NA1",
 					Rank:        "23",
+					Role:        "Middle",
 					Puuid:       "XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6",
 				},
 			},
@@ -193,6 +207,7 @@ func main() {
 					RiotName:    "Poseidon",
 					RiotTagLine: "NA1",
 					Rank:        "20",
+					Role:        "Jungle",
 					Puuid:       "QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3Xo",
 				},
 			},
@@ -206,6 +221,7 @@ func main() {
 					RiotName:    "Hades",
 					RiotTagLine: "NA1",
 					Rank:        "20",
+					Role:        "Bottom",
 					Puuid:       "BTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9p",
 				},
 			},
@@ -219,6 +235,7 @@ func main() {
 					RiotName:    "Shmekkles",
 					RiotTagLine: "NA1",
 					Rank:        "40",
+					Role:        "Middle",
 					Puuid:       "yL9vMGbJhFzsTUKCdN4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoW",
 				},
 			},
@@ -232,6 +249,7 @@ func main() {
 					RiotName:    "NMOAF",
 					RiotTagLine: "NA1",
 					Rank:        "41",
+					Role:        "Middle",
 					Puuid:       "g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBf",
 				},
 			},
@@ -245,6 +263,7 @@ func main() {
 					RiotName:    "Butts",
 					RiotTagLine: "NA1",
 					Rank:        "42",
+					Role:        "Jungle",
 					Puuid:       "tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7Pg",
 				},
 			},
@@ -258,6 +277,7 @@ func main() {
 					RiotName:    "Guts",
 					RiotTagLine: "NA1",
 					Rank:        "39",
+					Role:        "Top",
 					Puuid:       "BTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvUp",
 				},
 			},
@@ -271,6 +291,7 @@ func main() {
 					RiotName:    "Nuts",
 					RiotTagLine: "NA1",
 					Rank:        "38",
+					Role:        "Bottom",
 					Puuid:       "XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCT",
 				},
 			},
@@ -284,6 +305,7 @@ func main() {
 					RiotName:    "Gaze",
 					RiotTagLine: "NA1",
 					Rank:        "38",
+					Role:        "Support",
 					Puuid:       "1dF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNh7",
 				},
 			},
@@ -297,6 +319,7 @@ func main() {
 					RiotName:    "Athena",
 					RiotTagLine: "NA1",
 					Rank:        "39",
+					Role:        "Middle",
 					Puuid:       "QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3o",
 				},
 			},
@@ -310,6 +333,7 @@ func main() {
 					RiotName:    "Hera",
 					RiotTagLine: "NA1",
 					Rank:        "40",
+					Role:        "Jungle",
 					Puuid:       "WJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4o",
 				},
 			},
@@ -323,6 +347,7 @@ func main() {
 					RiotName:    "Achiles",
 					RiotTagLine: "NA1",
 					Rank:        "41",
+					Role:        "Top",
 					Puuid:       "RAEm6c0f5_WxA8PqBN3yL9vMGbJhFzsTUKCdN4QoS1pZGXWJvU9pQmG0YxBTfNh7",
 				},
 			},
@@ -336,6 +361,7 @@ func main() {
 					RiotName:    "Hercules",
 					RiotTagLine: "NA1",
 					Rank:        "30",
+					Role:        "Bottom",
 					Puuid:       "pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEW-",
 				},
 			},
@@ -349,6 +375,7 @@ func main() {
 					RiotName:    "Dionysus",
 					RiotTagLine: "NA1",
 					Rank:        "38",
+					Role:        "Support",
 					Puuid:       "L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4X",
 				},
 			},
@@ -362,6 +389,7 @@ func main() {
 					RiotName:    "Artemis",
 					RiotTagLine: "NA1",
 					Rank:        "39",
+					Role:        "Middle",
 					Puuid:       "JvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1",
 				},
 			},
@@ -375,6 +403,7 @@ func main() {
 					RiotName:    "Hermes",
 					RiotTagLine: "NA1",
 					Rank:        "40",
+					Role:        "Jungle",
 					Puuid:       "M7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0Yx",
 				},
 			},
@@ -388,6 +417,7 @@ func main() {
 					RiotName:    "Hephaestus",
 					RiotTagLine: "NA1",
 					Rank:        "42",
+					Role:        "Top",
 					Puuid:       "QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3-",
 				},
 			},
@@ -401,6 +431,7 @@ func main() {
 					RiotName:    "Zephyrus",
 					RiotTagLine: "NA1",
 					Rank:        "43",
+					Role:        "Bottom",
 					Puuid:       "2YgVzLtRAEm6c0f5_WxA8PqBN3yL9vMGbJhFzsTUKCdN4QoS1pZGXWJvU9pQmG0Yx",
 				},
 			},
@@ -414,6 +445,7 @@ func main() {
 					RiotName:    "Hera",
 					RiotTagLine: "NA1",
 					Rank:        "30",
+					Role:        "Support",
 					Puuid:       "N9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybNA",
 				},
 			},
@@ -430,13 +462,14 @@ func main() {
 		}
 
 		// Send the request
+		start := time.Now()
 		resp, err := http.Post("http://localhost:8080/matchmaking", "application/x-protobuf", bytes.NewReader(data))
+		elapsed := time.Since(start).Microseconds()
 		if err != nil {
 			log.Fatalf("Failed to send request: %v", err)
 		}
 		defer resp.Body.Close()
-
-		fmt.Println("Response Status:", resp.Status)
+		fmt.Printf("%s: Request took(μs) %d\n", resp.Status, elapsed)
 	}
 	
 }
