@@ -13,19 +13,6 @@ import (
 )
 
 func main() {
-	// partyRequest := &party.PartyRequest{
-	// 	PartyId:  "PARTY_5JKL723LJ1",
-	// 	TeamCount: "2",
-	// 	QueueType: 420,
-	// 	Participants: []*party.Participant{
-	// 		{
-	// 			RiotName:    "bsawatestuser",
-	// 			RiotTagLine: "NA1",
-	// 			Rank: "32",
-	// 			Puuid:       "HgWwc6_3QYsDbqi4TmEMdhscy7MDTAIr2iBEoh8Nn-HkqHhe1PZDh442GuUNa6ipV8dqgJUNN2KlpQ",
-	// 		},
-	// 	},
-	// }
 
 	partyRequests := []*party.PartyRequest{
 		{
