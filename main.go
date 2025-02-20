@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -451,10 +452,28 @@ func main() {
 			},
 		},
 	}
+
+	// Flat datastructure for people who queue up
+	// - Filter for puuid 
+	// - No need for 2 entries per person
+	// {
+	// 	Puuid:       "N9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybNA",
+	// 	PartyId:  	 "PARTY_5JKL723B2F",
+	// 	TeamCount: 	 "1",
+	// 	QueueType: 	 420,
+	// 	RiotName:    "Hera",
+	// 	RiotTagLine: "NA1",
+	// 	Rank:        "30",
+	// 	Role:        "Support",
+	// },
 	
 
 	// fmt.Printf("PartyRequest: %+v\n", partyRequest)
-	for i := 0; i < len(partyRequests); i++ {
+
+	targetUser := 27
+	
+	// for i := 0; i < len(partyRequests); i++ {
+	for i := targetUser; i < (targetUser + 1); i++ {
 		// Serialize the Protobuf message to binary format
 		data, err := proto.Marshal(partyRequests[i])
 		if err != nil {
@@ -469,7 +488,9 @@ func main() {
 			log.Fatalf("Failed to send request: %v", err)
 		}
 		defer resp.Body.Close()
-		fmt.Printf("%s: Request took(μs) %d\n", resp.Status, elapsed)
+
+		responseBody, _ := io.ReadAll(resp.Body)
+		fmt.Printf("%s: Request took(μs) %d\n%s", resp.Status, elapsed, responseBody)
 	}
 	
 }

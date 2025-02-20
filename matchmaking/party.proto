@@ -11,6 +11,9 @@ message Participant {
     string rank = 3;
     string role = 4;
     string puuid = 5;
+    string partyId = 6;
+    string teamCount = 7;
+    int32 queueType = 8;
 }
 
 message PartyRequest {
