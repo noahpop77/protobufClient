@@ -457,14 +457,20 @@ func main() {
 	// - Filter for puuid 
 	// - No need for 2 entries per person
 	// {
-	// 	Puuid:       "N9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybNA",
-	// 	PartyId:  	 "PARTY_5JKL723B2F",
+	// 	Player1Puuid:       "N9RBpCdTJ3KCA3XoEWs-N4QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybNA",
+	// 	Player1PartyId:  	"PARTY_5JKL723B2F",
+	// 	Player1RiotName:    "Hera",
+	// 	Player1RiotTagLine: "NA1",
+	// 	Player1Rank:        "30",
+	// 	Player1Role:        "",
+	// 	Player2Puuid:       "",
+	// 	Player2PartyId:  	"",
+	// 	Player2RiotName:    "",
+	// 	Player2RiotTagLine: "",
+	// 	Player2Rank:        "",
+	// 	Player2Role:        "",
 	// 	TeamCount: 	 "1",
 	// 	QueueType: 	 420,
-	// 	RiotName:    "Hera",
-	// 	RiotTagLine: "NA1",
-	// 	Rank:        "30",
-	// 	Role:        "Support",
 	// },
 	
 
@@ -482,7 +488,7 @@ func main() {
 
 		// Send the request
 		start := time.Now()
-		resp, err := http.Post("http://localhost:8080/matchmaking", "application/x-protobuf", bytes.NewReader(data))
+		resp, err := http.Post("http://localhost:8080/queueUp", "application/x-protobuf", bytes.NewReader(data))
 		elapsed := time.Since(start).Microseconds()
 		if err != nil {
 			log.Fatalf("Failed to send request: %v", err)
@@ -491,6 +497,20 @@ func main() {
 
 		responseBody, _ := io.ReadAll(resp.Body)
 		fmt.Printf("%s: Request took(μs) %d\n%s", resp.Status, elapsed, responseBody)
+
+
+
+		// Send the request
+		startMatchmaking := time.Now()
+		matchmakingResponse, err := http.Post("http://localhost:8080/matchmaking", "application/x-protobuf", bytes.NewReader(data))
+		elapsedMatchmaking := time.Since(startMatchmaking).Microseconds()
+		if err != nil {
+			log.Fatalf("Failed to send request: %v", err)
+		}
+		defer matchmakingResponse.Body.Close()
+
+		parsedResponse, _ := io.ReadAll(matchmakingResponse.Body)
+		fmt.Printf("%s: Request took(μs) %d\n%s", matchmakingResponse.Status, elapsedMatchmaking, parsedResponse)
 	}
 	
 }
