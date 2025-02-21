@@ -470,7 +470,7 @@ func main() {
 
 	// fmt.Printf("PartyRequest: %+v\n", partyRequest)
 
-	targetUser := 27
+	targetUser := 20
 	
 	// for i := 0; i < len(partyRequests); i++ {
 	for i := targetUser; i < (targetUser + 1); i++ {
