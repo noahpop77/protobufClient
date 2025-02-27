@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	
+
 	partyRequests := []*party.Players{
 		{
 			Player1Puuid:       "Xo7QpJdK-2YgVzLtRAEm6c0f5_WxA8PqBN3yL9vMGbJhFzsTUKCdN4QoS1pZGXWA",
@@ -363,7 +363,7 @@ func main() {
 			QueueType:          420,
 		},
 		{
-			Player1Puuid:       "BTfNhL7P5g8ZVdF6tAybN4QoS1pZGXWJvU9p",
+			Player1Puuid:       "BTfNhL7P5g8ZVdF6tAybN4QoS1pZGXWJvU9p-GFDGSDFGD5623654GDFGHB5234BDB",
 			Player1RiotName:    "Hephaestus",
 			Player1RiotTagLine: "NA1",
 			Player1Rank:        "42",
@@ -469,11 +469,7 @@ func main() {
 		},
 	}
 
-	
-
 	// fmt.Printf("PartyRequest: %+v\n", partyRequest)
-
-	
 
 	var wg sync.WaitGroup
 
@@ -511,5 +507,5 @@ func main() {
 	}
 
 	wg.Wait()
-	
+
 }
