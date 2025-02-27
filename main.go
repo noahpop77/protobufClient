@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
+	"sync"
 
 	"google.golang.org/protobuf/proto"
 
@@ -473,40 +473,43 @@ func main() {
 
 	// fmt.Printf("PartyRequest: %+v\n", partyRequest)
 
-	targetUser := 20
 	
-	// for i := 0; i < len(partyRequests); i++ {
-	for i := targetUser; i < (targetUser + 1); i++ {
-		// Serialize the Protobuf message to binary format
-		data, err := proto.Marshal(partyRequests[i])
-		if err != nil {
-			log.Fatalf("Failed to marshal Protobuf: %v", err)
-		}
 
-		// Send the request
-		start := time.Now()
-		resp, err := http.Post("http://localhost:8080/queueUp", "application/x-protobuf", bytes.NewReader(data))
-		elapsed := time.Since(start).Microseconds()
-		if err != nil {
-			log.Fatalf("Failed to send request: %v", err)
-		}
-		defer resp.Body.Close()
+	var wg sync.WaitGroup
 
-		responseBody, _ := io.ReadAll(resp.Body)
-		fmt.Printf("%s: Request took(μs) %d\n%s", resp.Status, elapsed, responseBody)
+	// targetUser := 20
+	// for i := targetUser; i < (targetUser + 2); i++ {
+	for i := 0; i < len(partyRequests); i++ {
+		wg.Add(1)
+		go func(pr *party.Players) {
+			defer wg.Done()
 
+			data, err := proto.Marshal(pr)
+			if err != nil {
+				log.Printf("Failed to marshal Protobuf: %v", err)
+				return
+			}
 
+			resp, err := http.Post("http://localhost:8080/queueUp", "application/x-protobuf", bytes.NewReader(data))
+			if err != nil {
+				log.Printf("Failed to send request: %v", err)
+				return
+			}
+			responseBody, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			fmt.Printf("%s", responseBody)
 
-		startMatchmaking := time.Now()
-		matchmakingResponse, err := http.Post("http://localhost:8080/matchmaking", "application/x-protobuf", bytes.NewReader(data))
-		elapsedMatchmaking := time.Since(startMatchmaking).Microseconds()
-		if err != nil {
-			log.Fatalf("Failed to send request: %v", err)
-		}
-		defer matchmakingResponse.Body.Close()
-
-		parsedResponse, _ := io.ReadAll(matchmakingResponse.Body)
-		fmt.Printf("%s: Request took(μs) %d\n%s", matchmakingResponse.Status, elapsedMatchmaking, parsedResponse)
+			matchmakingResponse, err := http.Post("http://localhost:8080/matchmaking", "application/x-protobuf", bytes.NewReader(data))
+			if err != nil {
+				log.Printf("Failed to send matchmaking request: %v", err)
+				return
+			}
+			parsedResponse, _ := io.ReadAll(matchmakingResponse.Body)
+			matchmakingResponse.Body.Close()
+			fmt.Printf("%s", parsedResponse)
+		}(partyRequests[i])
 	}
+
+	wg.Wait()
 	
 }
