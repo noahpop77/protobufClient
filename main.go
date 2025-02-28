@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -469,12 +469,10 @@ func main() {
 		},
 	}
 
-	// fmt.Printf("PartyRequest: %+v\n", partyRequest)
-
 	var wg sync.WaitGroup
 
-	// targetUser := 20
-	// for i := targetUser; i < (targetUser + 2); i++ {
+	// targetUser := 5
+	// for i := targetUser; i < (targetUser + 25); i++ {
 	for i := 0; i < len(partyRequests); i++ {
 		wg.Add(1)
 		go func(pr *party.Players) {
@@ -486,23 +484,34 @@ func main() {
 				return
 			}
 
-			resp, err := http.Post("http://localhost:8080/queueUp", "application/x-protobuf", bytes.NewReader(data))
+			resp, err := http.NewRequest("POST", "http://localhost:8080/queueUp", bytes.NewReader(data))
 			if err != nil {
 				log.Printf("Failed to send request: %v", err)
 				return
 			}
-			responseBody, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			fmt.Printf("%s", responseBody)
+			resp.Header.Set("Content-Type", "application/x-protobuf")
 
-			matchmakingResponse, err := http.Post("http://localhost:8080/matchmaking", "application/x-protobuf", bytes.NewReader(data))
+			client := &http.Client{}
+			streamResponse, err := client.Do(resp)
 			if err != nil {
-				log.Printf("Failed to send matchmaking request: %v", err)
+				log.Printf("Failed to send request: %v", err)
 				return
 			}
-			parsedResponse, _ := io.ReadAll(matchmakingResponse.Body)
-			matchmakingResponse.Body.Close()
-			fmt.Printf("%s", parsedResponse)
+			defer streamResponse.Body.Close()
+
+			// Stream the response in real-time
+			scanner := bufio.NewScanner(streamResponse.Body)
+			for scanner.Scan() {
+				fmt.Println(scanner.Text()) // Print each line as it's received
+			}
+
+			if err := scanner.Err(); err != nil {
+				log.Printf("Error reading response: %v", err)
+			}
+
+			// responseBody, _ := io.ReadAll(resp.Body)
+			// resp.Body.Close()
+			// fmt.Printf("%s", responseBody)
 		}(partyRequests[i])
 	}
 
