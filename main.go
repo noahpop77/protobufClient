@@ -502,16 +502,13 @@ func main() {
 			// Stream the response in real-time
 			scanner := bufio.NewScanner(streamResponse.Body)
 			for scanner.Scan() {
-				fmt.Println(scanner.Text()) // Print each line as it's received
+				// Print each line as it's received
+				fmt.Println(scanner.Text())
 			}
 
 			if err := scanner.Err(); err != nil {
 				log.Printf("Error reading response: %v", err)
 			}
-
-			// responseBody, _ := io.ReadAll(resp.Body)
-			// resp.Body.Close()
-			// fmt.Printf("%s", responseBody)
 		}(partyRequests[i])
 	}
 
