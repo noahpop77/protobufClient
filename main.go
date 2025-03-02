@@ -499,11 +499,15 @@ func main() {
 			}
 			defer streamResponse.Body.Close()
 
+			var printMutex sync.Mutex
+
 			// Stream the response in real-time
 			scanner := bufio.NewScanner(streamResponse.Body)
 			for scanner.Scan() {
 				// Print each line as it's received
+				printMutex.Lock()
 				fmt.Println(scanner.Text())
+				printMutex.Unlock()
 			}
 
 			if err := scanner.Err(); err != nil {
