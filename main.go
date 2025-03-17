@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -364,15 +365,38 @@ func main() {
 			}
 			defer streamResponse.Body.Close()
 
-			var printMutex sync.Mutex
+			// var printMutex sync.Mutex
+			var response party.MatchResponse
 
 			// Stream the response in real-time
 			scanner := bufio.NewScanner(streamResponse.Body)
-			for scanner.Scan() {
-				// Print each line as it's received
-				printMutex.Lock()
-				fmt.Println(scanner.Text())
-				printMutex.Unlock()
+			const maxBufferSize = 1024 * 1024 // Adjust this size as needed
+			buf := make([]byte, maxBufferSize)
+			scanner.Buffer(buf, maxBufferSize)
+			for {
+				// Read a chunk of data into the buffer
+				n, err := streamResponse.Body.Read(buf)
+				if err != nil && err != io.EOF {
+					fmt.Printf("Error reading from stream: %v\n", err)
+					return
+				}
+			
+				// Process the data in the buffer, in chunks of Protocol Buffers messages
+				data := buf[:n]
+				for len(data) > 0 {
+					err := proto.Unmarshal(data, &response)
+					if err != nil {
+						fmt.Printf("Failed to unmarshal data: %v - %s", err, data)
+						return
+					}
+					fmt.Printf("%s - %v\n", response.MatchID, response.Participants)
+					data = data[len(data):]
+				}
+			
+				// If we reached EOF, break out of the loop.
+				if err == io.EOF {
+					break
+				}
 			}
 
 			if err := scanner.Err(); err != nil {
