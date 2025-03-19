@@ -15,6 +15,72 @@ import (
 	"testClient/matchmaking/party"
 )
 
+
+type Participant struct {
+	Assists                          int      `json:"assists"`
+	ChampExperience                  int      `json:"champExperience"`
+	ChampLevel                       int      `json:"champLevel"`
+	ChampionId                       int      `json:"championId"`
+	ChampionName                     string   `json:"championName"`
+	Deaths                           int      `json:"deaths"`
+	GoldEarned                       int      `json:"goldEarned"`
+	Item0                            string   `json:"item0"`
+	Item1                            string   `json:"item1"`
+	Item2                            string   `json:"item2"`
+	Item3                            string   `json:"item3"`
+	Item4                            string   `json:"item4"`
+	Item5                            string   `json:"item5"`
+	Item6                            string   `json:"item6"`
+	Kills                            int      `json:"kills"`
+	NeutralMinionsKilled             int      `json:"neutralMinionsKilled"`
+	Perks                            Perks    `json:"perks"`
+	RiotIdGameName                   string   `json:"riotIdGameName"`
+	RiotIdTagline                    string   `json:"riotIdTagline"`
+	Summoner1Id                      string   `json:"summoner1Id"`
+	Summoner2Id                      string   `json:"summoner2Id"`
+	SummonerName                     string   `json:"summonerName"`
+	TeamId                           int      `json:"teamId"`
+	TotalAllyJungleMinionsKilled     int      `json:"totalAllyJungleMinionsKilled"`
+	TotalDamageDealtToChampions      int      `json:"totalDamageDealtToChampions"`
+	TotalEnemyJungleMinionsKilled    int      `json:"totalEnemyJungleMinionsKilled"`
+	TotalMinionsKilled               int      `json:"totalMinionsKilled"`
+	VisionScore                      int      `json:"visionScore"`
+	Win                              bool     `json:"win"`
+}
+
+type Perks struct {
+	Styles []Style `json:"styles"`
+}
+
+type Style struct {
+	Selections []Selection `json:"selections"`
+	Style      string      `json:"style,omitempty"`
+}
+
+type Selection struct {
+	Perk string `json:"perk"`
+}
+
+type MatchInfo struct {
+	GameCreation       int64           `json:"gameCreation"`
+	GameDuration       int64           `json:"gameDuration"`
+	GameEndTimestamp   int64           `json:"gameEndTimestamp"`
+	GameId             int64           `json:"gameId"`
+	GameStartTimestamp int64           `json:"gameStartTimestamp"`
+	GameVersion        string        `json:"gameVersion"`
+	Participants       []Participant `json:"participants"`
+}
+
+type Metadata struct {
+	MatchId     string   `json:"matchId"`
+	Participants []string `json:"participants"`
+}
+
+type MatchData struct {
+	Info     MatchInfo `json:"info"`
+	Metadata Metadata  `json:"metadata"`
+}
+
 func main() {
 
 	partyRequests := []*party.Players{
@@ -365,7 +431,6 @@ func main() {
 			}
 			defer streamResponse.Body.Close()
 
-			// var printMutex sync.Mutex
 			var response party.MatchResponse
 
 			// Stream the response in real-time
@@ -386,10 +451,11 @@ func main() {
 				for len(data) > 0 {
 					err := proto.Unmarshal(data, &response)
 					if err != nil {
-						fmt.Printf("Failed to unmarshal data: %v - %s", err, data)
+						fmt.Printf("Failed to unmarshal data: %v - %s\n", err, data)
 						return
 					}
-					fmt.Printf("%s - %v\n", response.MatchID, response.Participants)
+					fmt.Printf("%s\n", response.MatchID)
+					// fmt.Printf("%s - %v\n", response.MatchID, response.Participants)
 					data = data[len(data):]
 				}
 			
@@ -402,6 +468,84 @@ func main() {
 			if err := scanner.Err(); err != nil {
 				log.Printf("Error reading response: %v", err)
 			}
+
+
+
+
+
+			
+
+			connectionStruct := party.MatchConnection{
+				MatchID: response.MatchID,
+				ParticipantPUUID: pr.PlayerPuuid,
+			}
+
+			connectionResultStruct := party.MatchResult{}
+
+			connectionData, err := proto.Marshal(&connectionStruct)
+			if err != nil {
+				log.Printf("Failed to marshal result Protobuf: %v", err)
+				return
+			}
+			
+			connectResponse, err := http.NewRequest("POST", "http://localhost:8081/connectToMatch", bytes.NewReader(connectionData))
+			if err != nil {
+				log.Printf("Failed to send request: %v", err)
+				return
+			}
+			connectResponse.Header.Set("Content-Type", "application/x-protobuf")
+
+			matchClient := &http.Client{}
+			streamConnectResponse, err := matchClient.Do(connectResponse)
+			if err != nil {
+				log.Printf("Failed to send request: %v", err)
+				return
+			}
+			defer streamConnectResponse.Body.Close()
+
+			
+			var printMutex sync.Mutex
+			// Stream the response in real-time
+			matchScanner := bufio.NewScanner(streamConnectResponse.Body)
+			const maxMatchBufferSize = 1024 * 1024 // Adjust this size as needed
+			matchBuf := make([]byte, maxMatchBufferSize)
+			matchScanner.Buffer(matchBuf, maxBufferSize)
+			for {
+				// Read a chunk of data into the buffer
+				n, err := streamConnectResponse.Body.Read(matchBuf)
+				if err != nil && err != io.EOF {
+					fmt.Printf("Error reading from stream: %v\n", err)
+					return
+				}
+			
+				// Process the data in the buffer, in chunks of Protocol Buffers messages
+				data := matchBuf[:n]
+				for len(data) > 0 {
+					err = proto.Unmarshal(data, &connectionResultStruct)
+					if err != nil {
+						fmt.Printf("Failed to unmarshal data: %v - %s\n", err, data)
+						return
+					}
+
+					printMutex.Lock()
+					fmt.Printf("%s\n", connectionResultStruct.MatchID)
+					for _, value := range connectionResultStruct.TeamOnePUUID{
+						fmt.Printf("%s\n", value)
+					}
+					for _, value := range connectionResultStruct.TeamTwoPUUID{
+						fmt.Printf("%s\n", value)
+					}
+					printMutex.Unlock()
+
+					data = data[len(data):]
+				}
+			
+				// If we reached EOF, break out of the loop.
+				if err == io.EOF {
+					break
+				}
+			}
+
 		}(partyRequests[i])
 	}
 
