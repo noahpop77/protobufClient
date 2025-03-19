@@ -15,72 +15,6 @@ import (
 	"testClient/matchmaking/party"
 )
 
-
-type Participant struct {
-	Assists                          int      `json:"assists"`
-	ChampExperience                  int      `json:"champExperience"`
-	ChampLevel                       int      `json:"champLevel"`
-	ChampionId                       int      `json:"championId"`
-	ChampionName                     string   `json:"championName"`
-	Deaths                           int      `json:"deaths"`
-	GoldEarned                       int      `json:"goldEarned"`
-	Item0                            string   `json:"item0"`
-	Item1                            string   `json:"item1"`
-	Item2                            string   `json:"item2"`
-	Item3                            string   `json:"item3"`
-	Item4                            string   `json:"item4"`
-	Item5                            string   `json:"item5"`
-	Item6                            string   `json:"item6"`
-	Kills                            int      `json:"kills"`
-	NeutralMinionsKilled             int      `json:"neutralMinionsKilled"`
-	Perks                            Perks    `json:"perks"`
-	RiotIdGameName                   string   `json:"riotIdGameName"`
-	RiotIdTagline                    string   `json:"riotIdTagline"`
-	Summoner1Id                      string   `json:"summoner1Id"`
-	Summoner2Id                      string   `json:"summoner2Id"`
-	SummonerName                     string   `json:"summonerName"`
-	TeamId                           int      `json:"teamId"`
-	TotalAllyJungleMinionsKilled     int      `json:"totalAllyJungleMinionsKilled"`
-	TotalDamageDealtToChampions      int      `json:"totalDamageDealtToChampions"`
-	TotalEnemyJungleMinionsKilled    int      `json:"totalEnemyJungleMinionsKilled"`
-	TotalMinionsKilled               int      `json:"totalMinionsKilled"`
-	VisionScore                      int      `json:"visionScore"`
-	Win                              bool     `json:"win"`
-}
-
-type Perks struct {
-	Styles []Style `json:"styles"`
-}
-
-type Style struct {
-	Selections []Selection `json:"selections"`
-	Style      string      `json:"style,omitempty"`
-}
-
-type Selection struct {
-	Perk string `json:"perk"`
-}
-
-type MatchInfo struct {
-	GameCreation       int64           `json:"gameCreation"`
-	GameDuration       int64           `json:"gameDuration"`
-	GameEndTimestamp   int64           `json:"gameEndTimestamp"`
-	GameId             int64           `json:"gameId"`
-	GameStartTimestamp int64           `json:"gameStartTimestamp"`
-	GameVersion        string        `json:"gameVersion"`
-	Participants       []Participant `json:"participants"`
-}
-
-type Metadata struct {
-	MatchId     string   `json:"matchId"`
-	Participants []string `json:"participants"`
-}
-
-type MatchData struct {
-	Info     MatchInfo `json:"info"`
-	Metadata Metadata  `json:"metadata"`
-}
-
 func main() {
 
 	partyRequests := []*party.Players{
@@ -403,8 +337,6 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	// targetUser := 5
-	// for i := targetUser; i < (targetUser + 25); i++ {
 	for i := 0; i < len(partyRequests); i++ {
 		wg.Add(1)
 		go func(pr *party.Players) {
@@ -455,7 +387,6 @@ func main() {
 						return
 					}
 					fmt.Printf("%s\n", response.MatchID)
-					// fmt.Printf("%s - %v\n", response.MatchID, response.Participants)
 					data = data[len(data):]
 				}
 			
@@ -468,9 +399,6 @@ func main() {
 			if err := scanner.Err(); err != nil {
 				log.Printf("Error reading response: %v", err)
 			}
-
-
-
 
 
 			
