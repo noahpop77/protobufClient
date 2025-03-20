@@ -448,27 +448,13 @@ func main() {
 				// Process the data in the buffer, in chunks of Protocol Buffers messages
 				data := matchBuf[:n]
 				for len(data) > 0 {
-					// err = proto.Unmarshal(data, &connectionResultStruct)
-					// if err != nil {
-					// 	fmt.Printf("Failed to unmarshal data: %v - %s\n", err, data)
-					// 	return
-					// }
-
 					printMutex.Lock()
 					fmt.Printf("%s\n", data)
-					// fmt.Printf("%s\n", connectionResultStruct.MatchID)
-					// for _, value := range connectionResultStruct.TeamOnePUUID{
-					// 	fmt.Printf("%s\n", value)
-					// }
-					// for _, value := range connectionResultStruct.TeamTwoPUUID{
-					// 	fmt.Printf("%s\n", value)
-					// }
 					printMutex.Unlock()
 
 					data = data[len(data):]
 				}
-			
-				// If we reached EOF, break out of the loop.
+
 				if err == io.EOF {
 					break
 				}
