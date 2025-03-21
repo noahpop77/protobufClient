@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"google.golang.org/protobuf/proto"
@@ -406,6 +407,12 @@ func main() {
 			connectionStruct := party.MatchConnection{
 				MatchID: response.MatchID,
 				ParticipantPUUID: pr.PlayerPuuid,
+				RiotName: pr.PlayerRiotName,
+				RiotTag: pr.PlayerRiotTagLine,
+				Rank: strconv.Itoa(int(pr.PlayerRank)),
+				Role: pr.PlayerRole,
+				PartyId: pr.PartyId,
+				QueueType: strconv.Itoa(int(pr.QueueType)),
 			}
 
 			connectionData, err := proto.Marshal(&connectionStruct)
