@@ -92,7 +92,7 @@ func main() {
 			QueueType:         420,
 		},
 		{
-			PlayerPuuid:       "WJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-N4o",
+			PlayerPuuid:       "WJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3XoEWs-BBB",
 			PlayerRiotName:    "Fruity",
 			PlayerRiotTagLine: "NA1",
 			PlayerRank:        20,
@@ -164,7 +164,7 @@ func main() {
 			QueueType:         420,
 		},
 		{
-			PlayerPuuid:       "QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3KCA3o",
+			PlayerPuuid:       "QoS1pZGXWJvU9pQmG0YxBTfNhL7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdTJ3gl41C",
 			PlayerRiotName:    "Athena",
 			PlayerRiotTagLine: "NA1",
 			PlayerRank:        39,
@@ -182,7 +182,7 @@ func main() {
 			QueueType:         420,
 		},
 		{
-			PlayerPuuid:       "RAEm6c0f5_WxA8PqBN3yL9vMGbJhFzsTUKCdN4QoS1pZGXWJvU9pQmG0YxBTfNh7",
+			PlayerPuuid:       "RAEm6c0f5_WxA8PqBN3yL9vMGbJhFzsTUKCdN4QoS1pZGXWJvU9pQmG0YxBFHJBB",
 			PlayerRiotName:    "Achiles",
 			PlayerRiotTagLine: "NA1",
 			PlayerRank:        41,
@@ -444,6 +444,7 @@ func main() {
 			matchBuf := make([]byte, maxMatchBufferSize)
 			matchScanner.Buffer(matchBuf, maxBufferSize)
 			//connectionResultStruct := party.MatchResult{}
+
 			for {
 				// Read a chunk of data into the buffer
 				n, err := streamConnectResponse.Body.Read(matchBuf)
@@ -454,11 +455,11 @@ func main() {
 			
 				// Process the data in the buffer, in chunks of Protocol Buffers messages
 				data := matchBuf[:n]
+				
 				for len(data) > 0 {
 					printMutex.Lock()
 					fmt.Printf("%s\n", data)
 					printMutex.Unlock()
-
 					data = data[len(data):]
 				}
 
