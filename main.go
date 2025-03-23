@@ -387,7 +387,7 @@ func main() {
 						fmt.Printf("Failed to unmarshal data: %v - %s\n", err, data)
 						return
 					}
-					fmt.Printf("%s\n", response.MatchID)
+					fmt.Printf("Added %s to queue...\n", pr.PlayerRiotName)
 					data = data[len(data):]
 				}
 			
