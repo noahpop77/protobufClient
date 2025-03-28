@@ -89,3 +89,21 @@ message Participant {
     int32 vision_score = 28;
     bool win = 29;
 }
+
+message MatchHistoryRequest {
+    string puuid = 1;
+}
+
+message MatchHistoryReponse {
+    string puuid = 1;
+    repeated MatchResult matches = 2;
+}
+
+message UserProfile {
+    string puuid = 1;
+    string riotName = 2;
+    string riotTag = 3;
+    int32 rank = 4;
+    int32 wins = 5;
+    int32 losses = 6;
+}

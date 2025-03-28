@@ -468,6 +468,52 @@ func main() {
 				}
 			}
 
+
+
+			MatchHistoryRequest := party.MatchHistoryRequest{
+				Puuid: pr.PlayerPuuid,
+			}
+
+			MatchHistoryRequestData, err := proto.Marshal(&MatchHistoryRequest)
+			if err != nil {
+				log.Printf("Failed to marshal result Protobuf: %v", err)
+				return
+			}
+
+			historyResponse, err := http.NewRequest("POST", "http://localhost:8082/matchHistory", bytes.NewReader(MatchHistoryRequestData))
+			if err != nil {
+				log.Printf("Failed to send request: %v", err)
+				return
+			}
+			historyResponse.Header.Set("Content-Type", "application/x-protobuf")
+
+			matchHistoryClient := &http.Client{}
+			matchHistoryResponse, err := matchHistoryClient.Do(historyResponse)
+			if err != nil {
+				log.Printf("Failed to send request: %v", err)
+				return
+			}
+			defer matchHistoryResponse.Body.Close()
+			
+			var protoResponse party.MatchHistoryReponse
+			body, err := io.ReadAll(matchHistoryResponse.Body)
+			if err != nil {
+				log.Fatalf("Failed to read response body: %v\n", err)
+			}
+			err = proto.Unmarshal(body, &protoResponse)
+			if err != nil {
+				log.Fatalf("Failed to unmarshal match history response: %v\n", err)
+			}
+
+			// fmt.Printf("MatchID: %s\n", protoResponse.Matches[0].MatchID)
+
+			fmt.Printf("%s\n", protoResponse.Puuid)
+			// fmt.Printf("%s\n", protoResponse.Matches[0])
+			fmt.Printf("History: %s\n", protoResponse.Matches)
+			for _, value := range protoResponse.Matches{
+				fmt.Printf("MatchID: %s\nGameDuration: %s\n", value.MatchID, value.GameDuration)
+			}
+
 		}(partyRequests[i])
 	}
 

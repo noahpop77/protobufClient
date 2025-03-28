@@ -843,6 +843,195 @@ func (x *Participant) GetWin() bool {
 	return false
 }
 
+type MatchHistoryRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Puuid string `protobuf:"bytes,1,opt,name=puuid,proto3" json:"puuid,omitempty"`
+}
+
+func (x *MatchHistoryRequest) Reset() {
+	*x = MatchHistoryRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_party_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MatchHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchHistoryRequest) ProtoMessage() {}
+
+func (x *MatchHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_party_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchHistoryRequest.ProtoReflect.Descriptor instead.
+func (*MatchHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_party_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *MatchHistoryRequest) GetPuuid() string {
+	if x != nil {
+		return x.Puuid
+	}
+	return ""
+}
+
+type MatchHistoryReponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Puuid   string         `protobuf:"bytes,1,opt,name=puuid,proto3" json:"puuid,omitempty"`
+	Matches []*MatchResult `protobuf:"bytes,2,rep,name=matches,proto3" json:"matches,omitempty"`
+}
+
+func (x *MatchHistoryReponse) Reset() {
+	*x = MatchHistoryReponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_party_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MatchHistoryReponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchHistoryReponse) ProtoMessage() {}
+
+func (x *MatchHistoryReponse) ProtoReflect() protoreflect.Message {
+	mi := &file_party_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchHistoryReponse.ProtoReflect.Descriptor instead.
+func (*MatchHistoryReponse) Descriptor() ([]byte, []int) {
+	return file_party_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *MatchHistoryReponse) GetPuuid() string {
+	if x != nil {
+		return x.Puuid
+	}
+	return ""
+}
+
+func (x *MatchHistoryReponse) GetMatches() []*MatchResult {
+	if x != nil {
+		return x.Matches
+	}
+	return nil
+}
+
+type UserProfile struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Puuid    string `protobuf:"bytes,1,opt,name=puuid,proto3" json:"puuid,omitempty"`
+	RiotName string `protobuf:"bytes,2,opt,name=riotName,proto3" json:"riotName,omitempty"`
+	RiotTag  string `protobuf:"bytes,3,opt,name=riotTag,proto3" json:"riotTag,omitempty"`
+	Rank     int32  `protobuf:"varint,4,opt,name=rank,proto3" json:"rank,omitempty"`
+	Wins     int32  `protobuf:"varint,5,opt,name=wins,proto3" json:"wins,omitempty"`
+	Losses   int32  `protobuf:"varint,6,opt,name=losses,proto3" json:"losses,omitempty"`
+}
+
+func (x *UserProfile) Reset() {
+	*x = UserProfile{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_party_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UserProfile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserProfile) ProtoMessage() {}
+
+func (x *UserProfile) ProtoReflect() protoreflect.Message {
+	mi := &file_party_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserProfile.ProtoReflect.Descriptor instead.
+func (*UserProfile) Descriptor() ([]byte, []int) {
+	return file_party_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *UserProfile) GetPuuid() string {
+	if x != nil {
+		return x.Puuid
+	}
+	return ""
+}
+
+func (x *UserProfile) GetRiotName() string {
+	if x != nil {
+		return x.RiotName
+	}
+	return ""
+}
+
+func (x *UserProfile) GetRiotTag() string {
+	if x != nil {
+		return x.RiotTag
+	}
+	return ""
+}
+
+func (x *UserProfile) GetRank() int32 {
+	if x != nil {
+		return x.Rank
+	}
+	return 0
+}
+
+func (x *UserProfile) GetWins() int32 {
+	if x != nil {
+		return x.Wins
+	}
+	return 0
+}
+
+func (x *UserProfile) GetLosses() int32 {
+	if x != nil {
+		return x.Losses
+	}
+	return 0
+}
+
 var File_party_proto protoreflect.FileDescriptor
 
 var file_party_proto_rawDesc = []byte{
@@ -979,8 +1168,27 @@ var file_party_proto_rawDesc = []byte{
 	0x6e, 0x73, 0x4b, 0x69, 0x6c, 0x6c, 0x65, 0x64, 0x12, 0x21, 0x0a, 0x0c, 0x76, 0x69, 0x73, 0x69,
 	0x6f, 0x6e, 0x5f, 0x73, 0x63, 0x6f, 0x72, 0x65, 0x18, 0x1c, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b,
 	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x77,
-	0x69, 0x6e, 0x18, 0x1d, 0x20, 0x01, 0x28, 0x08, 0x52, 0x03, 0x77, 0x69, 0x6e, 0x42, 0x09, 0x5a,
-	0x07, 0x2e, 0x2f, 0x70, 0x61, 0x72, 0x74, 0x79, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x69, 0x6e, 0x18, 0x1d, 0x20, 0x01, 0x28, 0x08, 0x52, 0x03, 0x77, 0x69, 0x6e, 0x22, 0x2b, 0x0a,
+	0x13, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x75, 0x75, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x70, 0x75, 0x75, 0x69, 0x64, 0x22, 0x59, 0x0a, 0x13, 0x4d, 0x61,
+	0x74, 0x63, 0x68, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x52, 0x65, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x75, 0x75, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x05, 0x70, 0x75, 0x75, 0x69, 0x64, 0x12, 0x2c, 0x0a, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68,
+	0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x70, 0x61, 0x72, 0x74, 0x79,
+	0x2e, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x07, 0x6d, 0x61,
+	0x74, 0x63, 0x68, 0x65, 0x73, 0x22, 0x99, 0x01, 0x0a, 0x0b, 0x55, 0x73, 0x65, 0x72, 0x50, 0x72,
+	0x6f, 0x66, 0x69, 0x6c, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x75, 0x75, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x70, 0x75, 0x75, 0x69, 0x64, 0x12, 0x1a, 0x0a, 0x08, 0x72,
+	0x69, 0x6f, 0x74, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72,
+	0x69, 0x6f, 0x74, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x72, 0x69, 0x6f, 0x74, 0x54,
+	0x61, 0x67, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x72, 0x69, 0x6f, 0x74, 0x54, 0x61,
+	0x67, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x61, 0x6e, 0x6b, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52,
+	0x04, 0x72, 0x61, 0x6e, 0x6b, 0x12, 0x12, 0x0a, 0x04, 0x77, 0x69, 0x6e, 0x73, 0x18, 0x05, 0x20,
+	0x01, 0x28, 0x05, 0x52, 0x04, 0x77, 0x69, 0x6e, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x6c, 0x6f, 0x73,
+	0x73, 0x65, 0x73, 0x18, 0x06, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x6c, 0x6f, 0x73, 0x73, 0x65,
+	0x73, 0x42, 0x09, 0x5a, 0x07, 0x2e, 0x2f, 0x70, 0x61, 0x72, 0x74, 0x79, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -995,28 +1203,32 @@ func file_party_proto_rawDescGZIP() []byte {
 	return file_party_proto_rawDescData
 }
 
-var file_party_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_party_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_party_proto_goTypes = []interface{}{
-	(*Players)(nil),         // 0: party.Players
-	(*MatchConnection)(nil), // 1: party.MatchConnection
-	(*MatchResponse)(nil),   // 2: party.MatchResponse
-	(*MatchResult)(nil),     // 3: party.MatchResult
-	(*Perk)(nil),            // 4: party.Perk
-	(*Selection)(nil),       // 5: party.Selection
-	(*Style)(nil),           // 6: party.Style
-	(*Perks)(nil),           // 7: party.Perks
-	(*Participant)(nil),     // 8: party.Participant
+	(*Players)(nil),             // 0: party.Players
+	(*MatchConnection)(nil),     // 1: party.MatchConnection
+	(*MatchResponse)(nil),       // 2: party.MatchResponse
+	(*MatchResult)(nil),         // 3: party.MatchResult
+	(*Perk)(nil),                // 4: party.Perk
+	(*Selection)(nil),           // 5: party.Selection
+	(*Style)(nil),               // 6: party.Style
+	(*Perks)(nil),               // 7: party.Perks
+	(*Participant)(nil),         // 8: party.Participant
+	(*MatchHistoryRequest)(nil), // 9: party.MatchHistoryRequest
+	(*MatchHistoryReponse)(nil), // 10: party.MatchHistoryReponse
+	(*UserProfile)(nil),         // 11: party.UserProfile
 }
 var file_party_proto_depIdxs = []int32{
 	8, // 0: party.MatchResult.participants:type_name -> party.Participant
 	5, // 1: party.Style.selections:type_name -> party.Selection
 	6, // 2: party.Perks.styles:type_name -> party.Style
 	7, // 3: party.Participant.perks:type_name -> party.Perks
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 4: party.MatchHistoryReponse.matches:type_name -> party.MatchResult
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_party_proto_init() }
@@ -1133,6 +1345,42 @@ func file_party_proto_init() {
 				return nil
 			}
 		}
+		file_party_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MatchHistoryRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_party_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MatchHistoryReponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_party_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*UserProfile); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1140,7 +1388,7 @@ func file_party_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_party_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
