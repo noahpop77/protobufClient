@@ -509,7 +509,7 @@ func main() {
 
 			fmt.Printf("%s\n", protoResponse.Puuid)
 			// fmt.Printf("%s\n", protoResponse.Matches[0])
-			fmt.Printf("History: %s\n", protoResponse.Matches)
+			// fmt.Printf("History: %s\n", protoResponse.Matches)
 			for _, value := range protoResponse.Matches{
 				fmt.Printf("MatchID: %s\nGameDuration: %s\n", value.MatchID, value.GameDuration)
 			}
