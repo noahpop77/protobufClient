@@ -295,8 +295,8 @@ func main() {
 			PlayerRiotTagLine: "",
 			PlayerRank:        0,
 			PlayerRole:        "",
-			PartyId:            "",
-			QueueType:          6969,
+			PartyId:           "",
+			QueueType:         6969,
 		},
 		{
 			PlayerPuuid:       "TotallyWrongID",
@@ -378,7 +378,7 @@ func main() {
 					fmt.Printf("Error reading from stream: %v\n", err)
 					return
 				}
-			
+
 				// Process the data in the buffer, in chunks of Protocol Buffers messages
 				data := buf[:n]
 				for len(data) > 0 {
@@ -390,7 +390,7 @@ func main() {
 					fmt.Printf("Added %s to queue...\n", pr.PlayerRiotName)
 					data = data[len(data):]
 				}
-			
+
 				// If we reached EOF, break out of the loop.
 				if err == io.EOF {
 					break
@@ -401,18 +401,15 @@ func main() {
 				log.Printf("Error reading response: %v", err)
 			}
 
-
-			
-
 			connectionStruct := party.MatchConnection{
-				MatchID: response.MatchID,
+				MatchID:          response.MatchID,
 				ParticipantPUUID: pr.PlayerPuuid,
-				RiotName: pr.PlayerRiotName,
-				RiotTag: pr.PlayerRiotTagLine,
-				Rank: strconv.Itoa(int(pr.PlayerRank)),
-				Role: pr.PlayerRole,
-				PartyId: pr.PartyId,
-				QueueType: strconv.Itoa(int(pr.QueueType)),
+				RiotName:         pr.PlayerRiotName,
+				RiotTag:          pr.PlayerRiotTagLine,
+				Rank:             strconv.Itoa(int(pr.PlayerRank)),
+				Role:             pr.PlayerRole,
+				PartyId:          pr.PartyId,
+				QueueType:        strconv.Itoa(int(pr.QueueType)),
 			}
 
 			connectionData, err := proto.Marshal(&connectionStruct)
@@ -420,7 +417,7 @@ func main() {
 				log.Printf("Failed to marshal result Protobuf: %v", err)
 				return
 			}
-			
+
 			connectResponse, err := http.NewRequest("POST", "http://localhost:8081/connectToMatch", bytes.NewReader(connectionData))
 			if err != nil {
 				log.Printf("Failed to send request: %v", err)
@@ -436,7 +433,6 @@ func main() {
 			}
 			defer streamConnectResponse.Body.Close()
 
-			
 			var printMutex sync.Mutex
 			// Stream the response in real-time
 			matchScanner := bufio.NewScanner(streamConnectResponse.Body)
@@ -452,10 +448,10 @@ func main() {
 					fmt.Printf("Error reading from stream: %v\n", err)
 					return
 				}
-			
+
 				// Process the data in the buffer, in chunks of Protocol Buffers messages
 				data := matchBuf[:n]
-				
+
 				for len(data) > 0 {
 					printMutex.Lock()
 					fmt.Printf("%s\n", data)
@@ -467,8 +463,6 @@ func main() {
 					break
 				}
 			}
-
-
 
 			MatchHistoryRequest := party.MatchHistoryRequest{
 				Puuid: pr.PlayerPuuid,
@@ -494,7 +488,7 @@ func main() {
 				return
 			}
 			defer matchHistoryResponse.Body.Close()
-			
+
 			var protoResponse party.MatchHistoryReponse
 			body, err := io.ReadAll(matchHistoryResponse.Body)
 			if err != nil {
@@ -510,9 +504,46 @@ func main() {
 			fmt.Printf("%s\n", protoResponse.Puuid)
 			// fmt.Printf("%s\n", protoResponse.Matches[0])
 			// fmt.Printf("History: %s\n", protoResponse.Matches)
-			for _, value := range protoResponse.Matches{
+			for _, value := range protoResponse.Matches {
 				fmt.Printf("MatchID: %s\nGameDuration: %s\n", value.MatchID, value.GameDuration)
 			}
+
+			summonerProfileRequestBody := party.UserProfile{
+				Puuid: pr.PlayerPuuid,
+			}
+
+			summonerProfileRequestData, err := proto.Marshal(&summonerProfileRequestBody)
+			if err != nil {
+				log.Printf("Failed to marshal result Protobuf: %v", err)
+				return
+			}
+
+			summonerProfileRequest, err := http.NewRequest("POST", "http://localhost:8082/riotProfile", bytes.NewReader(summonerProfileRequestData))
+			if err != nil {
+				log.Printf("Failed to send request: %v", err)
+				return
+			}
+			historyResponse.Header.Set("Content-Type", "application/x-protobuf")
+
+			summonerProfileClient := &http.Client{}
+			summonerProfileResponse, err := summonerProfileClient.Do(summonerProfileRequest)
+			if err != nil {
+				log.Printf("Failed to send request: %v", err)
+				return
+			}
+			defer matchHistoryResponse.Body.Close()
+
+			var summonerProfileProtoResponse party.UserProfile
+			profileBody, err := io.ReadAll(summonerProfileResponse.Body)
+			if err != nil {
+				log.Fatalf("Failed to read response body: %v\n", err)
+			}
+			err = proto.Unmarshal(profileBody, &summonerProfileProtoResponse)
+			if err != nil {
+				log.Fatalf("Failed to unmarshal summoner profile response: %v\n", err)
+			}
+
+			fmt.Printf("Player data:\n%s(trunc), %s, %s, %d, %d, %d\n", summonerProfileProtoResponse.Puuid[0:10], summonerProfileProtoResponse.RiotName, summonerProfileProtoResponse.RiotTag, summonerProfileProtoResponse.Rank, summonerProfileProtoResponse.Wins, summonerProfileProtoResponse.Losses)
 
 		}(partyRequests[i])
 	}
