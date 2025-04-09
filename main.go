@@ -18,6 +18,7 @@ import (
 */
 
 func main() {
+	printBanner()
 	// Define a flag
 	echo := flag.String("echo", "default", "Echos your argument to the screen")
 	userCount := flag.Int("users", 1, "Number of simulated users")

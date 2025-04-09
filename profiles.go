@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"sync"
 	"testClient/olympusProto"
 	"time"
 
@@ -31,7 +30,7 @@ Main profile:
 */
 
 func QueueUpProfile(userCount int) {
-	log.Printf("In QueueUpProfile")
+	
 	src := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(src)
 	
@@ -49,21 +48,19 @@ func QueueUpProfile(userCount int) {
 
 	generateRandomUsers(rng, &partyRequests, userCount)
 	
-	log.Printf("%d", len(partyRequests))
-	log.Printf("%s", partyRequests)
-
-	var wg sync.WaitGroup
+	remainingUsers := userCount
 
 	for i := 0; i < len(partyRequests); i++ {
-		
-		wg.Add(1)
 
 		go func(pr *olympusProto.Players) {
 
-			for {
-				defer wg.Done()
+			defer func() {
+				remainingUsers = remainingUsers - 1
+			}()
 
-				log.Printf("func(pr *olympusProto.Players)")
+			for {
+
+				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 120)) * time.Second)
 
 				data, err := proto.Marshal(pr)
 				if err != nil {
@@ -73,7 +70,7 @@ func QueueUpProfile(userCount int) {
 
 				resp, err := http.NewRequest("POST", "http://localhost:8080/queueUp", bytes.NewReader(data))
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 1: %v", err)
 					return
 				}
 				resp.Header.Set("Content-Type", "application/x-protobuf")
@@ -81,7 +78,7 @@ func QueueUpProfile(userCount int) {
 				client := &http.Client{}
 				streamResponse, err := client.Do(resp)
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 2: %v", err)
 					return
 				}
 				defer streamResponse.Body.Close()
@@ -109,7 +106,7 @@ func QueueUpProfile(userCount int) {
 							fmt.Printf("Failed to unmarshal data: %v - %s\n", err, data)
 							return
 						}
-						fmt.Printf("Added %s to queue...\n", pr.PlayerRiotName)
+						// fmt.Printf("Added %s to queue...\n", pr.PlayerRiotName)
 						data = data[len(data):]
 					}
 
@@ -127,9 +124,9 @@ func QueueUpProfile(userCount int) {
 
 				
 
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////
 				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////
 				
 				connectionStruct := olympusProto.MatchConnection{
 					MatchID:          response.MatchID, // ID of match that we got from the queueUp API endpoint
@@ -150,7 +147,7 @@ func QueueUpProfile(userCount int) {
 
 				connectResponse, err := http.NewRequest("POST", "http://localhost:8081/connectToMatch", bytes.NewReader(connectionData))
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 3: %v", err)
 					return
 				}
 				connectResponse.Header.Set("Content-Type", "application/x-protobuf")
@@ -158,40 +155,40 @@ func QueueUpProfile(userCount int) {
 				matchClient := &http.Client{}
 				streamConnectResponse, err := matchClient.Do(connectResponse)
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 4: %v, %s", err, pr)
 					return
 				}
 				defer streamConnectResponse.Body.Close()
 
-				var printMutex sync.Mutex
+				// var printMutex sync.Mutex
 				// Stream the response in real-time
 				matchScanner := bufio.NewScanner(streamConnectResponse.Body)
 				const maxMatchBufferSize = 1024 * 1024 // Adjust this size as needed
 				matchBuf := make([]byte, maxMatchBufferSize)
 				matchScanner.Buffer(matchBuf, maxBufferSize)
 
-				for {
-					// Read a chunk of data into the buffer
-					n, err := streamConnectResponse.Body.Read(matchBuf)
-					if err != nil && err != io.EOF {
-						fmt.Printf("Error reading from stream: %v\n", err)
-						return
-					}
+				// for {
+				// 	// Read a chunk of data into the buffer
+				// 	n, err := streamConnectResponse.Body.Read(matchBuf)
+				// 	if err != nil && err != io.EOF {
+				// 		fmt.Printf("Error reading from stream: %v\n", err)
+				// 		return
+				// 	}
 
-					// Process the data in the buffer, in chunks of Protocol Buffers messages
-					data := matchBuf[:n]
+				// 	// Process the data in the buffer, in chunks of Protocol Buffers messages
+				// 	data := matchBuf[:n]
+					
+				// 	for len(data) > 0 {
+				// 		printMutex.Lock()
+				// 		fmt.Printf("%s\n", data)
+				// 		printMutex.Unlock()
+				// 		data = data[len(data):]
+				// 	}
 
-					for len(data) > 0 {
-						printMutex.Lock()
-						fmt.Printf("%s\n", data)
-						printMutex.Unlock()
-						data = data[len(data):]
-					}
-
-					if err == io.EOF {
-						break
-					}
-				}
+				// 	if err == io.EOF {
+				// 		break
+				// 	}
+				// }
 
 				// Simulated delay in how player behaves
 				// Sleeps for a random value between 10 seconds and 1 minutes
@@ -203,9 +200,9 @@ func QueueUpProfile(userCount int) {
 
 
 
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////
 				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////
 
 				// Checking match history after the game is completed
 
@@ -221,7 +218,7 @@ func QueueUpProfile(userCount int) {
 
 				historyResponse, err := http.NewRequest("POST", "http://localhost:8082/matchHistory", bytes.NewReader(MatchHistoryRequestData))
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 5: %v", err)
 					return
 				}
 				historyResponse.Header.Set("Content-Type", "application/x-protobuf")
@@ -229,7 +226,7 @@ func QueueUpProfile(userCount int) {
 				matchHistoryClient := &http.Client{}
 				matchHistoryResponse, err := matchHistoryClient.Do(historyResponse)
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 6: %v", err)
 					return
 				}
 				defer matchHistoryResponse.Body.Close()
@@ -244,14 +241,6 @@ func QueueUpProfile(userCount int) {
 					log.Fatalf("Failed to unmarshal match history response: %v\n", err)
 				}
 
-				// fmt.Printf("MatchID: %s\n", protoResponse.Matches[0].MatchID)
-
-				fmt.Printf("%s\n", protoResponse.Puuid)
-				// fmt.Printf("%s\n", protoResponse.Matches[0])
-				// fmt.Printf("History: %s\n", protoResponse.Matches)
-				for _, value := range protoResponse.Matches {
-					fmt.Printf("MatchID: %s\nGameDuration: %s\n", value.MatchID, value.GameDuration)
-				}
 				// Simulated delay in how player behaves
 				// Sleeps for a random value between 10 seconds and 5 minutes
 				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 300)) * time.Second)
@@ -261,9 +250,9 @@ func QueueUpProfile(userCount int) {
 
 
 
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////
 				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
-				////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////
 
 				// Checkign summoner profile after match history
 
@@ -279,7 +268,7 @@ func QueueUpProfile(userCount int) {
 
 				summonerProfileRequest, err := http.NewRequest("POST", "http://localhost:8082/riotProfile", bytes.NewReader(summonerProfileRequestData))
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 7: %v", err)
 					return
 				}
 				historyResponse.Header.Set("Content-Type", "application/x-protobuf")
@@ -287,7 +276,7 @@ func QueueUpProfile(userCount int) {
 				summonerProfileClient := &http.Client{}
 				summonerProfileResponse, err := summonerProfileClient.Do(summonerProfileRequest)
 				if err != nil {
-					log.Printf("Failed to send request: %v", err)
+					log.Printf("Failed to send request 8: %v", err)
 					return
 				}
 				defer matchHistoryResponse.Body.Close()
@@ -302,16 +291,18 @@ func QueueUpProfile(userCount int) {
 					log.Fatalf("Failed to unmarshal summoner profile response: %v\n", err)
 				}
 
-				fmt.Printf("Player data:\n%s(trunc), %s, %s, %d, %d, %d\n", summonerProfileProtoResponse.Puuid[0:10], summonerProfileProtoResponse.RiotName, summonerProfileProtoResponse.RiotTag, summonerProfileProtoResponse.Rank, summonerProfileProtoResponse.Wins, summonerProfileProtoResponse.Losses)
+				// fmt.Printf("Player data: %s(trunc), %s, %s, %d, %d, %d\n", summonerProfileProtoResponse.Puuid[0:10], summonerProfileProtoResponse.RiotName, summonerProfileProtoResponse.RiotTag, summonerProfileProtoResponse.Rank, summonerProfileProtoResponse.Wins, summonerProfileProtoResponse.Losses)
 
 				// Simulated delay in how player behaves
 				// Sleeps for a random value between 10 seconds and 3 minutes
 				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 180)) * time.Second)
 
+				// log.Printf("Rotation Complete")
+				log.Printf("Remaining Users: %d", remainingUsers)
 			}
 			
 		}(partyRequests[i])
 	}
-
-	wg.Wait()
+	select {}
+	
 }

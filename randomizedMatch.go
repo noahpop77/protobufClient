@@ -8,7 +8,7 @@ import (
 )
 
 func generateRandomUsers(rng *rand.Rand, partyRequests *[]*olympusProto.Players, userCount int){
-	log.Printf("In QueueUpProfile")
+	// log.Printf("In QueueUpProfile")
 	for i := 0; i < userCount; i++ {
 		*partyRequests = append(*partyRequests, &olympusProto.Players{
 			PlayerPuuid:       RandomString(rng, 64),
@@ -19,7 +19,7 @@ func generateRandomUsers(rng *rand.Rand, partyRequests *[]*olympusProto.Players,
 			PartyId:           fmt.Sprintf("PARTY_%s", RandomString(rng, 10)),
 			QueueType:         420,
 		})
-		log.Printf("Appending")
+		// log.Printf("Appending")
 	}
 
 }
