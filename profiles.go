@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"sync"
 	"testClient/olympusProto"
 	"time"
 
@@ -29,11 +30,12 @@ Main profile:
 	-
 */
 
-func QueueUpProfile(userCount int) {
-	
+func QueueUpProfile(userCount int, counter int) {
+	var printMutex sync.Mutex
+
 	src := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(src)
-	
+
 	partyRequests := []*olympusProto.Players{
 		{
 			PlayerPuuid:       "JvU9pQmG-0YxBTfNhLKCA3Ro2WzXlJqM7P5g8ZVdF6tAybN4XoEWsK1L9RBpCdT3",
@@ -47,20 +49,20 @@ func QueueUpProfile(userCount int) {
 	}
 
 	generateRandomUsers(rng, &partyRequests, userCount)
-	
-	remainingUsers := userCount
 
 	for i := 0; i < len(partyRequests); i++ {
 
 		go func(pr *olympusProto.Players) {
 
 			defer func() {
-				remainingUsers = remainingUsers - 1
+				counter = counter - 1
+				// atomic.AddInt64(&iterations, 1)
+				// iterations += 1
 			}()
 
 			for {
 
-				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 120)) * time.Second)
+				time.Sleep(time.Duration(RandomIntInRange(rng, 1, 30)) * time.Second)
 
 				data, err := proto.Marshal(pr)
 				if err != nil {
@@ -78,8 +80,9 @@ func QueueUpProfile(userCount int) {
 				client := &http.Client{}
 				streamResponse, err := client.Do(resp)
 				if err != nil {
-					log.Printf("Failed to send request 2: %v", err)
-					return
+					// log.Printf("Failed to send request 2: %v", err)
+					// return
+					continue
 				}
 				defer streamResponse.Body.Close()
 
@@ -120,14 +123,12 @@ func QueueUpProfile(userCount int) {
 					log.Printf("Error reading response: %v", err)
 				}
 
-
-
-				
+				// log.Printf("Sending...\n")
 
 				////////////////////////////////////////////////////////////////
 				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
 				////////////////////////////////////////////////////////////////
-				
+
 				connectionStruct := olympusProto.MatchConnection{
 					MatchID:          response.MatchID, // ID of match that we got from the queueUp API endpoint
 					ParticipantPUUID: pr.PlayerPuuid,
@@ -156,11 +157,10 @@ func QueueUpProfile(userCount int) {
 				streamConnectResponse, err := matchClient.Do(connectResponse)
 				if err != nil {
 					log.Printf("Failed to send request 4: %v, %s", err, pr)
-					return
+					// return
 				}
 				defer streamConnectResponse.Body.Close()
 
-				// var printMutex sync.Mutex
 				// Stream the response in real-time
 				matchScanner := bufio.NewScanner(streamConnectResponse.Body)
 				const maxMatchBufferSize = 1024 * 1024 // Adjust this size as needed
@@ -177,7 +177,7 @@ func QueueUpProfile(userCount int) {
 
 				// 	// Process the data in the buffer, in chunks of Protocol Buffers messages
 				// 	data := matchBuf[:n]
-					
+
 				// 	for len(data) > 0 {
 				// 		printMutex.Lock()
 				// 		fmt.Printf("%s\n", data)
@@ -193,12 +193,6 @@ func QueueUpProfile(userCount int) {
 				// Simulated delay in how player behaves
 				// Sleeps for a random value between 10 seconds and 1 minutes
 				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 60)) * time.Second)
-
-
-
-
-
-
 
 				////////////////////////////////////////////////////////////////
 				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
@@ -243,12 +237,7 @@ func QueueUpProfile(userCount int) {
 
 				// Simulated delay in how player behaves
 				// Sleeps for a random value between 10 seconds and 5 minutes
-				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 300)) * time.Second)
-
-
-
-
-
+				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 30)) * time.Second)
 
 				////////////////////////////////////////////////////////////////
 				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
@@ -288,21 +277,27 @@ func QueueUpProfile(userCount int) {
 				}
 				err = proto.Unmarshal(profileBody, &summonerProfileProtoResponse)
 				if err != nil {
-					log.Fatalf("Failed to unmarshal summoner profile response: %v\n", err)
+					// log.Fatalf("Failed to unmarshal summoner profile response: %v\n", err)
+					log.Printf("Failed to unmarshal summoner profile response: %v\n", err) // ProfileBody shows "No Data Found"
+					return                                                                 // Exit the goroutine
 				}
 
 				// fmt.Printf("Player data: %s(trunc), %s, %s, %d, %d, %d\n", summonerProfileProtoResponse.Puuid[0:10], summonerProfileProtoResponse.RiotName, summonerProfileProtoResponse.RiotTag, summonerProfileProtoResponse.Rank, summonerProfileProtoResponse.Wins, summonerProfileProtoResponse.Losses)
 
 				// Simulated delay in how player behaves
 				// Sleeps for a random value between 10 seconds and 3 minutes
-				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 180)) * time.Second)
+				time.Sleep(time.Duration(RandomIntInRange(rng, 10, 18)) * time.Second)
 
 				// log.Printf("Rotation Complete")
-				log.Printf("Remaining Users: %d", remainingUsers)
+				printMutex.Lock()
+
+				// atomic.AddInt64(&iterations, 1)
+				log.Printf("counter: %d", counter)
+				printMutex.Unlock()
 			}
-			
+
 		}(partyRequests[i])
 	}
 	select {}
-	
+
 }

@@ -539,7 +539,9 @@ func main() {
 			}
 			err = proto.Unmarshal(profileBody, &summonerProfileProtoResponse)
 			if err != nil {
-				log.Fatalf("Failed to unmarshal summoner profile response: %v\n", err)
+				//log.Fatalf("Failed to unmarshal summoner profile response: %v\n", err)
+				log.Printf("Failed to unmarshal summoner profile response: %v\n", err)
+				return // Exit the goroutine
 			}
 
 			fmt.Printf("Player data:\n%s(trunc), %s, %s, %d, %d, %d\n", summonerProfileProtoResponse.Puuid[0:10], summonerProfileProtoResponse.RiotName, summonerProfileProtoResponse.RiotTag, summonerProfileProtoResponse.Rank, summonerProfileProtoResponse.Wins, summonerProfileProtoResponse.Losses)

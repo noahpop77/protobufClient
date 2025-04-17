@@ -5,5 +5,5 @@ import (
 )
 
 func printBanner() {
-	fmt.Printf("Bob")
+	fmt.Printf("Test Client\n")
 }
