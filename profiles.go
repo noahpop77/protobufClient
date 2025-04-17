@@ -217,7 +217,7 @@ func QueueUpProfile(userCount int, counter int) {
 				}
 				historyResponse.Header.Set("Content-Type", "application/x-protobuf")
 
-				matchHistoryClient := &http.Client{}
+				matchHistoryClient := &http.Client{} //2025/04/16 18:38:11 Failed to send request 6: Post "http://localhost:8082/matchHistory": read tcp [::1]:57101->[::1]:8082: read: connection reset by peer
 				matchHistoryResponse, err := matchHistoryClient.Do(historyResponse)
 				if err != nil {
 					log.Printf("Failed to send request 6: %v", err)
@@ -267,8 +267,8 @@ func QueueUpProfile(userCount int, counter int) {
 				if err != nil {
 					log.Printf("Failed to send request 8: %v", err)
 					return
-				}
-				defer matchHistoryResponse.Body.Close()
+				} //2025/04/16 18:38:33 Failed to send request 8: Post "http://localhost:8082/riotProfile": dial tcp [::1]:8082: connect: resource temporarily unavailable
+				defer summonerProfileResponse.Body.Close()
 
 				var summonerProfileProtoResponse olympusProto.UserProfile
 				profileBody, err := io.ReadAll(summonerProfileResponse.Body)
