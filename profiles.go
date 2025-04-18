@@ -157,7 +157,7 @@ func QueueUpProfile(userCount int, counter int) {
 				streamConnectResponse, err := matchClient.Do(connectResponse)
 				if err != nil {
 					log.Printf("Failed to send request 4: %v, %s", err, pr)
-					// return
+					return
 				}
 				defer streamConnectResponse.Body.Close()
 
