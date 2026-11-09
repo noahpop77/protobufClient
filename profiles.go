@@ -1,19 +1,21 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
-	"testClient/olympusProto"
 	"time"
 
 	"google.golang.org/protobuf/proto"
+
+	"testClient/olympusProto"
 )
 
 /*
@@ -27,12 +29,57 @@ Main profile:
 	- With the returned matchID hit up /connectToMatch
 	- Only players with PUUIDs that are whitelisted can connect
 		- White list determined by matchmaking server
-	-
+3) /matchHistory + /riotProfile
+	- Simulates the post-game client experience
 */
 
-func QueueUpProfile(userCount int, counter int) {
-	// var printMutex sync.Mutex
+const (
+	matchmakingURL = "http://localhost:8080/queueUp"
+	gameServerURL  = "http://localhost:8081/connectToMatch"
+	platformURL    = "http://localhost:8082"
 
+	// queueTimeout bounds how long a player waits for a match. It must be
+	// generous (matchmaking can legitimately take a while) but it still
+	// guarantees a stuck request is eventually recycled.
+	queueTimeout = 10 * time.Minute
+	// apiTimeout bounds the short post-match requests.
+	apiTimeout = 15 * time.Second
+	// maxResponseBytes protects against a runaway/oversized response.
+	maxResponseBytes = 8 << 20
+	// maxAttempts is how many times a short API call is retried on a
+	// transport error before the player's cycle is aborted.
+	maxAttempts = 3
+)
+
+// sharedTransport is used by every simulated player. The old code created a
+// fresh http.Client per request (and never closed the bodies), which is what
+// produced "resource temporarily unavailable" once the process ran out of
+// file descriptors. One transport also lets connections be reused instead of
+// opening a new TCP connection per call.
+var sharedTransport = &http.Transport{
+	Proxy: http.ProxyFromEnvironment,
+	DialContext: (&net.Dialer{
+		Timeout:   10 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).DialContext,
+	ForceAttemptHTTP2:     false,
+	MaxIdleConns:          0,     // no global cap on idle connections
+	MaxIdleConnsPerHost:   20000, // the default of 2 defeats pooling at this scale
+	MaxConnsPerHost:       0,     // unlimited active connections
+	IdleConnTimeout:       90 * time.Second,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+}
+
+var (
+	// queueClient has no overall timeout: /queueUp is long-lived and is
+	// bounded by queueTimeout via the request context instead.
+	queueClient = &http.Client{Transport: sharedTransport}
+	// apiClient bounds the short platform requests.
+	apiClient = &http.Client{Transport: sharedTransport, Timeout: apiTimeout}
+)
+
+func QueueUpProfile(userCount int, counter int) {
 	src := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(src)
 
@@ -48,292 +95,210 @@ func QueueUpProfile(userCount int, counter int) {
 		},
 	}
 
-	// fmt.Printf("Pre GenerateRandomUsers\n")
 	generateRandomUsers(rng, &partyRequests, userCount)
-	var counterMutex sync.Mutex
-	// fmt.Printf("Pre looping to create all the go func go-routines\n")
+
+	var wg sync.WaitGroup
 	for i := 0; i < len(partyRequests); i++ {
+		player := partyRequests[i]
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
 
-		go func(pr *olympusProto.Players) {
+			// Each goroutine gets its own RNG: the shared *rand.Rand used by
+			// the original code is not safe for concurrent use.
+			playerRng := rand.New(rand.NewSource(time.Now().UnixNano() + int64(index)))
 
-			defer func() {
-				counterMutex.Lock()
-				counter--
-				counterMutex.Unlock()
-			}()
+			// Small stagger so 10k players do not all open a connection in
+			// the same instant.
+			time.Sleep(time.Duration(playerRng.Intn(2000)) * time.Millisecond)
 
 			for {
-
-				// time.Sleep(time.Duration(RandomIntInRange(rng, 1, 5)) * time.Second)
-				// fmt.Printf("Running Request Loop\n")
-				data, err := proto.Marshal(pr)
-				if err != nil {
-					log.Printf("Failed to marshal Protobuf: %v", err)
-					return
-				}
-
-				// fmt.Printf("Pre Queueing Up Request\n")
-				resp, err := http.NewRequest("POST", "http://localhost:8080/queueUp", bytes.NewReader(data))
-				if err != nil {
-					log.Printf("Failed to send request 1: %v", err)
-					return
-				}
-				resp.Header.Set("Content-Type", "application/x-protobuf")
-
-				client := &http.Client{}
-				streamResponse, err := client.Do(resp)
-				if err != nil {
-					// log.Printf("Failed to send request 2: %v", err)
-					// return
+				if err := runPlayerCycle(playerRng, player); err != nil {
+					logFailure("player %s: %v", shortPUUID(player.PlayerPuuid), err)
+					// Back off before re-queueing so a failing player does
+					// not spin the CPU or hammer the server.
+					time.Sleep(time.Duration(RandomIntInRange(playerRng, 1, 3)) * time.Second)
 					continue
 				}
-				defer streamResponse.Body.Close()
-
-				var response olympusProto.MatchResponse
-
-				// Stream the response in real-time
-				scanner := bufio.NewScanner(streamResponse.Body)
-				const maxBufferSize = 1024 * 1024 // Adjust this size as needed
-				buf := make([]byte, maxBufferSize)
-				scanner.Buffer(buf, maxBufferSize)
-				for {
-					// Read a chunk of data into the buffer
-					n, err := streamResponse.Body.Read(buf)
-					if err != nil && err != io.EOF {
-						fmt.Printf("Error reading from stream: %v\n", err)
-						return
-					}
-
-					// Process the data in the buffer, in chunks of Protocol Buffers messages
-					data := buf[:n]
-					for len(data) > 0 {
-						err := proto.Unmarshal(data, &response)
-						if err != nil {
-							fmt.Printf("Failed to unmarshal data: %v - %s\n", err, data)
-							return
-						}
-						// fmt.Printf("Added %s to queue...\n", pr.PlayerRiotName)
-						data = data[len(data):]
-					}
-
-					// If we reached EOF, break out of the loop.
-					if err == io.EOF {
-						break
-					}
-				}
-
-				if err := scanner.Err(); err != nil {
-					log.Printf("Error reading response: %v", err)
-				}
-
-				// log.Printf("Sending...\n")
-
-				////////////////////////////////////////////////////////////////
-				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
-				////////////////////////////////////////////////////////////////
-
-				/*
-					Note: So we find everyone a match but error later?
-
-					Server:
-					platform_server       | 2025/12/02 04:20:41 No match found for PUUID: S4URCScuWqJQWMY22h979IVPjVTEpeY7cVxPGOOXN5xeqm8Wc1eVlItPZfGLNLK8, , , 0
-					game_server           | 2025/12/02 04:20:41 end count 6
-					platform_server       | 2025/12/02 04:20:41 No match found for PUUID: vmoipFWbGBA3Eqr88Evrc3QFLml3fJ6lDfviohl6rHb459VUgJj8KmQ6chveWOcD, , , 0
-
-					Tester:
-					2025/12/01 23:20:41 S4URCScuWqJQWMY22h979IVPjVTEpeY7cVxPGOOXN5xeqm8Wc1eVlItPZfGLNLK8, MATCH_5W5SX7PSYC
-					2025/12/01 23:20:41 counter: 100
-					2025/12/01 23:20:41 vmoipFWbGBA3Eqr88Evrc3QFLml3fJ6lDfviohl6rHb459VUgJj8KmQ6chveWOcD, MATCH_3DYFWP37YT
-					2025/12/01 23:20:41 counter: 100
-				*/
-				// log.Printf("%v, %v, %v", pr.PlayerPuuid, response.MatchID, response.Participants)
-
-				// // time.Sleep(time.Duration(RandomIntInRange(rng, 1, 5)) * time.Second)
-
-				connectionStruct := olympusProto.MatchConnection{
-					MatchID:          response.MatchID, // ID of match that we got from the queueUp API endpoint
-					ParticipantPUUID: pr.PlayerPuuid,
-					RiotName:         pr.PlayerRiotName,
-					RiotTag:          pr.PlayerRiotTagLine,
-					Rank:             strconv.Itoa(int(pr.PlayerRank)),
-					Role:             pr.PlayerRole,
-					PartyId:          pr.PartyId,
-					QueueType:        strconv.Itoa(int(pr.QueueType)),
-				}
-
-				connectionData, err := proto.Marshal(&connectionStruct)
-				if err != nil {
-					log.Printf("Failed to marshal result Protobuf: %v", err)
-					return
-				}
-				// fmt.Printf("Pre Connecting to Match Request\n")
-
-				connectResponse, err := http.NewRequest("POST", "http://localhost:8081/connectToMatch", bytes.NewReader(connectionData))
-				if err != nil {
-					log.Printf("Failed to send request 3: %v", err)
-					return
-				}
-				connectResponse.Header.Set("Content-Type", "application/x-protobuf")
-
-				matchClient := &http.Client{}
-				streamConnectResponse, err := matchClient.Do(connectResponse)
-				if err != nil {
-					log.Printf("Failed to send request 4: %v, %s", err, pr)
-					return
-				}
-				defer streamConnectResponse.Body.Close()
-
-				// if streamConnectResponse.StatusCode != http.StatusOK {
-				// 	body, _ := io.ReadAll(streamConnectResponse.Body)
-				// 	log.Printf("✗ Server returned error status %d: %s", streamConnectResponse.StatusCode, body)
-				// 	return
-				// }
-				// log.Println("✓ Server returned 200 OK")
-
-				// // Stream the response in real-time
-				// matchScanner := bufio.NewScanner(streamConnectResponse.Body)
-				// const maxMatchBufferSize = 1024 * 1024 // Adjust this size as needed
-				// matchBuf := make([]byte, maxMatchBufferSize)
-				// matchScanner.Buffer(matchBuf, maxBufferSize)
-
-				// for {
-				// 	// Read a chunk of data into the buffer
-				// 	n, err := streamConnectResponse.Body.Read(matchBuf)
-				// 	if err != nil && err != io.EOF {
-				// 		fmt.Printf("Error reading from stream: %v\n", err)
-				// 		return
-				// 	}
-
-				// 	// Process the data in the buffer, in chunks of Protocol Buffers messages
-				// 	data := matchBuf[:n]
-
-				// 	for len(data) > 0 {
-				// 		printMutex.Lock()
-				// 		fmt.Printf("%s\n", data)
-				// 		printMutex.Unlock()
-				// 		data = data[len(data):]
-				// 	}
-
-				// 	if err == io.EOF {
-				// 		break
-				// 	}
-				// }
-
-				// Simulated delay in how player behaves
-				// Sleeps for a random value between 10 seconds and 1 minutes
-				time.Sleep(time.Duration(RandomIntInRange(rng, 5, 6)) * time.Second)
-
-				////////////////////////////////////////////////////////////////
-				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
-				////////////////////////////////////////////////////////////////
-
-				// Checking match history after the game is completed
-
-				MatchHistoryRequest := olympusProto.MatchHistoryRequest{
-					Puuid: pr.PlayerPuuid,
-				}
-
-				MatchHistoryRequestData, err := proto.Marshal(&MatchHistoryRequest)
-				if err != nil {
-					log.Printf("Failed to marshal result Protobuf: %v", err)
-					return
-				}
-
-				historyResponse, err := http.NewRequest("POST", "http://localhost:8082/matchHistory", bytes.NewReader(MatchHistoryRequestData))
-				if err != nil {
-					log.Printf("Failed to send request 5: %v", err)
-					return
-				}
-				historyResponse.Header.Set("Content-Type", "application/x-protobuf")
-
-				matchHistoryClient := &http.Client{} //2025/04/16 18:38:11 Failed to send request 6: Post "http://localhost:8082/matchHistory": read tcp [::1]:57101->[::1]:8082: read: connection reset by peer
-				matchHistoryResponse, err := matchHistoryClient.Do(historyResponse)
-				if err != nil {
-					log.Printf("Failed to send request 6: %v", err)
-					return
-				}
-				defer matchHistoryResponse.Body.Close()
-
-				var protoResponse olympusProto.MatchHistoryReponse
-				body, err := io.ReadAll(matchHistoryResponse.Body)
-				if err != nil {
-					log.Fatalf("Failed to read response body: %v\n", err)
-				}
-				err = proto.Unmarshal(body, &protoResponse)
-				if err != nil {
-					log.Fatalf("Failed to unmarshal match history response: %v\n", err)
-				}
-
-				// Note: So the failed requests are failing before match history
-				// log.Printf("%s\n%v", protoResponse.Puuid, protoResponse.Matches)
-
-				// Simulated delay in how player behaves
-				// Sleeps for a random value between 10 seconds and 5 minutes
-				// time.Sleep(time.Duration(RandomIntInRange(rng, 11, 15)) * time.Second)
-
-				////////////////////////////////////////////////////////////////
-				// CONNECTING TO MATCH AFTER MATCHMAKING IS DONE
-				////////////////////////////////////////////////////////////////
-
-				// Checkign summoner profile after match history
-
-				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				// Note: TODO: The matchmaking connection api request previously seems to sometimes prematurely exit out or die somewhere
-				// on the server so it cancels out here as well and speeds to the riotprofile request. Its a big problem. FIX IT
-				summonerProfileRequestBody := olympusProto.UserProfile{
-					Puuid: pr.PlayerPuuid,
-				}
-
-				summonerProfileRequestData, err := proto.Marshal(&summonerProfileRequestBody)
-				if err != nil {
-					log.Printf("Failed to marshal result Protobuf: %v", err)
-					return
-				}
-
-				summonerProfileRequest, err := http.NewRequest("POST", "http://localhost:8082/riotProfile", bytes.NewReader(summonerProfileRequestData))
-				if err != nil {
-					log.Printf("Failed to send request 7: %v", err)
-					return
-				}
-				summonerProfileRequest.Header.Set("Content-Type", "application/x-protobuf")
-
-				summonerProfileClient := &http.Client{}
-				summonerProfileResponse, err := summonerProfileClient.Do(summonerProfileRequest)
-				if err != nil {
-					log.Printf("Failed to send request 8: %v", err)
-					return
-				} //2025/04/16 18:38:33 Failed to send request 8: Post "http://localhost:8082/riotProfile": dial tcp [::1]:8082: connect: resource temporarily unavailable
-				defer summonerProfileResponse.Body.Close()
-
-				var summonerProfileProtoResponse olympusProto.UserProfile
-				profileBody, err := io.ReadAll(summonerProfileResponse.Body)
-				if err != nil {
-					log.Fatalf("Failed to read response body: %v\n", err)
-				}
-				err = proto.Unmarshal(profileBody, &summonerProfileProtoResponse)
-				if err != nil {
-					// log.Fatalf("Failed to unmarshal summoner profile response: %v\n", err)
-					log.Printf("Failed to unmarshal summoner profile response: %v\n", err) // ProfileBody shows "No Data Found"
-					//log.Printf("return info: %v", summonerProfileProtoResponse.RiotName)
-					return // Exit the goroutine
-				}
-				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-				// fmt.Printf("Player data: %s(trunc), %s, %s, %d, %d, %d\n", summonerProfileProtoResponse.Puuid[0:10], summonerProfileProtoResponse.RiotName, summonerProfileProtoResponse.RiotTag, summonerProfileProtoResponse.Rank, summonerProfileProtoResponse.Wins, summonerProfileProtoResponse.Losses)
-
-				// Simulated delay in how player behaves
-				// Sleeps for a random value between 10 seconds and 3 minutes
-				// time.Sleep(time.Duration(RandomIntInRange(rng, 1, 5)) * time.Second)
-
-				// log.Printf("Rotation Complete")
-
-				// printMutex.Lock()
-				// log.Printf("counter: %d", counter)
-				// printMutex.Unlock()
 			}
-
-		}(partyRequests[i])
+		}(i)
 	}
-	select {}
 
+	// Every player loop is intentionally infinite, so this only returns if
+	// the process is interrupted.
+	wg.Wait()
+}
+
+// runPlayerCycle performs one full simulated player journey: queue, connect,
+// play, then read match history and profile.
+func runPlayerCycle(rng *rand.Rand, player *olympusProto.Players) error {
+	// 1) Queue up and wait for the matchmaker to hand us a match.
+	queueCtx, cancelQueue := context.WithTimeout(context.Background(), queueTimeout)
+	body, err := doProto(queueCtx, queueClient, matchmakingURL, player)
+	cancelQueue()
+	if err != nil {
+		return fmt.Errorf("queueUp: %w", err)
+	}
+
+	var match olympusProto.MatchResponse
+	if err := proto.Unmarshal(body, &match); err != nil {
+		return fmt.Errorf("unmarshal queueUp response (%d bytes): %w", len(body), err)
+	}
+	if match.MatchID == "" {
+		return fmt.Errorf("queueUp returned an empty match id")
+	}
+
+	// 2) Connect to the match we were assigned.
+	connection := &olympusProto.MatchConnection{
+		MatchID:          match.MatchID,
+		ParticipantPUUID: player.PlayerPuuid,
+		RiotName:         player.PlayerRiotName,
+		RiotTag:          player.PlayerRiotTagLine,
+		Rank:             strconv.Itoa(int(player.PlayerRank)),
+		Role:             player.PlayerRole,
+		PartyId:          player.PartyId,
+		QueueType:        strconv.Itoa(int(player.QueueType)),
+	}
+
+	apiCtx, cancelAPI := context.WithTimeout(context.Background(), apiTimeout)
+	_, err = doProtoRetry(apiCtx, apiClient, gameServerURL, connection)
+	cancelAPI()
+	if err != nil {
+		return fmt.Errorf("connectToMatch: %w", err)
+	}
+
+	// 3) Simulate the player being in a game.
+	time.Sleep(time.Duration(RandomIntInRange(rng, 5, 6)) * time.Second)
+
+	// 4) Read the match history.
+	historyCtx, cancelHistory := context.WithTimeout(context.Background(), apiTimeout)
+	body, err = doProtoRetry(historyCtx, apiClient, platformURL+"/matchHistory",
+		&olympusProto.MatchHistoryRequest{Puuid: player.PlayerPuuid})
+	cancelHistory()
+	if err != nil {
+		return fmt.Errorf("matchHistory: %w", err)
+	}
+	var history olympusProto.MatchHistoryReponse
+	if err := proto.Unmarshal(body, &history); err != nil {
+		return fmt.Errorf("unmarshal matchHistory response (%d bytes): %w", len(body), err)
+	}
+
+	// 5) Read the summoner profile.
+	profileCtx, cancelProfile := context.WithTimeout(context.Background(), apiTimeout)
+	body, err = doProtoRetry(profileCtx, apiClient, platformURL+"/riotProfile",
+		&olympusProto.UserProfile{Puuid: player.PlayerPuuid})
+	cancelProfile()
+	if err != nil {
+		return fmt.Errorf("riotProfile: %w", err)
+	}
+	var profile olympusProto.UserProfile
+	if err := proto.Unmarshal(body, &profile); err != nil {
+		return fmt.Errorf("unmarshal riotProfile response (%d bytes): %w", len(body), err)
+	}
+
+	return nil
+}
+
+// doProtoRetry retries a short request on transient transport errors.
+func doProtoRetry(ctx context.Context, client *http.Client, url string, msg proto.Message) ([]byte, error) {
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		body, err := doProto(ctx, client, url, msg)
+		if err == nil {
+			return body, nil
+		}
+		lastErr = err
+
+		// A cancelled/expired context will never succeed on retry.
+		if ctx.Err() != nil {
+			break
+		}
+		if attempt < maxAttempts {
+			select {
+			case <-ctx.Done():
+				return nil, lastErr
+			case <-time.After(time.Duration(attempt) * 250 * time.Millisecond):
+			}
+		}
+	}
+	return nil, lastErr
+}
+
+// doProto marshals msg, POSTs it, and always fully reads and closes the
+// response body. Reading the whole body (instead of the old chunked
+// Read/Unmarshal loop) is what makes this correct for a message that spans
+// multiple TCP segments: the server ends the body when the handler returns.
+func doProto(ctx context.Context, client *http.Client, url string, msg proto.Message) ([]byte, error) {
+	payload, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-protobuf")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	// Closing here (per call) is the fix for the old `defer Body.Close()`
+	// inside an infinite loop, which leaked a descriptor per iteration.
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s returned %d: %s", url, resp.StatusCode, truncate(string(body), 200))
+	}
+	if len(body) == 0 {
+		return nil, fmt.Errorf("%s returned an empty body", url)
+	}
+
+	return body, nil
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
+}
+
+func shortPUUID(puuid string) string {
+	if len(puuid) <= 10 {
+		return puuid
+	}
+	return puuid[:10]
+}
+
+// logFailure rate-limits error logging. With 10k players a single outage can
+// otherwise produce tens of thousands of identical lines per second.
+var (
+	logMu      sync.Mutex
+	lastLog    time.Time
+	suppressed int
+)
+
+func logFailure(format string, args ...any) {
+	logMu.Lock()
+	defer logMu.Unlock()
+
+	if time.Since(lastLog) < time.Second {
+		suppressed++
+		return
+	}
+
+	msg := fmt.Sprintf(format, args...)
+	if suppressed > 0 {
+		log.Printf("(%d similar messages suppressed) %s", suppressed, msg)
+		suppressed = 0
+	} else {
+		log.Printf("%s", msg)
+	}
+	lastLog = time.Now()
 }

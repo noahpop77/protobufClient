@@ -7,7 +7,7 @@ import (
 	"testClient/olympusProto"
 )
 
-func generateRandomUsers(rng *rand.Rand, partyRequests *[]*olympusProto.Players, userCount int){
+func generateRandomUsers(rng *rand.Rand, partyRequests *[]*olympusProto.Players, userCount int) {
 	// log.Printf("In QueueUpProfile")
 	for i := 0; i < userCount; i++ {
 		*partyRequests = append(*partyRequests, &olympusProto.Players{
@@ -24,7 +24,7 @@ func generateRandomUsers(rng *rand.Rand, partyRequests *[]*olympusProto.Players,
 
 }
 
-func RandomRole(rng *rand.Rand) string{
+func RandomRole(rng *rand.Rand) string {
 	roles := []string{
 		"Middle",
 		"Top",
@@ -37,7 +37,10 @@ func RandomRole(rng *rand.Rand) string{
 
 func RandomIntInRange(rng *rand.Rand, min, max int) int {
 	if min > max {
-		log.Fatalf("min cannot be greater than max")
+		// Never kill the whole load test from a helper running in a
+		// goroutine; fall back to the lower bound instead.
+		log.Printf("RandomIntInRange: min (%d) cannot be greater than max (%d)", min, max)
+		min, max = max, min
 	}
 	return rng.Intn(max-min+1) + min
 }
