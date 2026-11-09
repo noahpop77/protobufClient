@@ -44,6 +44,12 @@ const (
 	queueTimeout = 10 * time.Minute
 	// apiTimeout bounds the short post-match requests.
 	apiTimeout = 15 * time.Second
+	// simulatedGameDuration must match the game server's simulated match
+	// length. The player waits this long before reading the result.
+	simulatedGameDuration = 300 * time.Second
+	// postGameBuffer gives the game server time to write the match result to
+	// the database before the client asks for it.
+	postGameBuffer = 15 * time.Second
 	// maxResponseBytes protects against a runaway/oversized response.
 	maxResponseBytes = 8 << 20
 	// maxAttempts is how many times a short API call is retried on a
@@ -167,8 +173,9 @@ func runPlayerCycle(rng *rand.Rand, player *olympusProto.Players) error {
 		return fmt.Errorf("connectToMatch: %w", err)
 	}
 
-	// 3) Simulate the player being in a game.
-	time.Sleep(time.Duration(RandomIntInRange(rng, 5, 6)) * time.Second)
+	// 3) Simulate the player being in a game. Wait for the full server-side
+	// game plus a buffer so the result has been written to the database.
+	time.Sleep(simulatedGameDuration + postGameBuffer)
 
 	// 4) Read the match history.
 	historyCtx, cancelHistory := context.WithTimeout(context.Background(), apiTimeout)
