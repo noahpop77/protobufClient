@@ -49,7 +49,7 @@ const (
 	// [minGameDuration, maxGameDuration]. The game server derives the same
 	// value from the same ID, so both sides agree without an extra request.
 	// These bounds must match the game server's constants.
-	minGameDuration = 200 * time.Second
+	minGameDuration = 75 * time.Second
 	maxGameDuration = 400 * time.Second
 	// postGameBuffer gives the game server time to write the match result to
 	// the database before the client asks for it.
