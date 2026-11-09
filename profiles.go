@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"log"
 	"math/rand"
@@ -44,9 +45,12 @@ const (
 	queueTimeout = 10 * time.Minute
 	// apiTimeout bounds the short post-match requests.
 	apiTimeout = 15 * time.Second
-	// simulatedGameDuration must match the game server's simulated match
-	// length. The player waits this long before reading the result.
-	simulatedGameDuration = 300 * time.Second
+	// A match's simulated game length is derived from its match ID, in
+	// [minGameDuration, maxGameDuration]. The game server derives the same
+	// value from the same ID, so both sides agree without an extra request.
+	// These bounds must match the game server's constants.
+	minGameDuration = 200 * time.Second
+	maxGameDuration = 400 * time.Second
 	// postGameBuffer gives the game server time to write the match result to
 	// the database before the client asks for it.
 	postGameBuffer = 15 * time.Second
@@ -56,6 +60,19 @@ const (
 	// transport error before the player's cycle is aborted.
 	maxAttempts = 3
 )
+
+// matchGameDuration returns a stable per-match game length in
+// [minGameDuration, maxGameDuration]. It must produce exactly the same value as
+// the game server's function of the same name: it is a pure function of the
+// match ID, which both sides receive from the matchmaker.
+func matchGameDuration(matchID string) time.Duration {
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(matchID))
+
+	spanSeconds := int64((maxGameDuration - minGameDuration) / time.Second)
+	offsetSeconds := int64(h.Sum64() % uint64(spanSeconds+1))
+	return minGameDuration + time.Duration(offsetSeconds)*time.Second
+}
 
 // sharedTransport is used by every simulated player. The old code created a
 // fresh http.Client per request (and never closed the bodies), which is what
@@ -173,9 +190,9 @@ func runPlayerCycle(rng *rand.Rand, player *olympusProto.Players) error {
 		return fmt.Errorf("connectToMatch: %w", err)
 	}
 
-	// 3) Simulate the player being in a game. Wait for the full server-side
-	// game plus a buffer so the result has been written to the database.
-	time.Sleep(simulatedGameDuration + postGameBuffer)
+	// 3) Simulate the player being in a game. Wait for this match's server-side
+	// duration plus a buffer so the result has been written to the database.
+	time.Sleep(matchGameDuration(match.MatchID) + postGameBuffer)
 
 	// 4) Read the match history.
 	historyCtx, cancelHistory := context.WithTimeout(context.Background(), apiTimeout)
